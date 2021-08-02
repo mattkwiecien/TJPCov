@@ -15,7 +15,6 @@ import os
 cwd = os.getcwd()
 sys.path.append(os.path.dirname(cwd)+"/tjpcov")
 
-d2r = np.pi/180
 
 
 def depickling(name):
@@ -37,7 +36,7 @@ def check_numerr(a, b, f=np.array_equal):
 
 # INPUT
 # CCL and sacc input:
-with open("tests/data/cosmos_desy1_v2p1p0.pkl", 'rb') as ff:
+with open("tests/data/cosmos_desy1_v2p2p0.pkl", 'rb') as ff:
     cosmo = pickle.load(ff)
 
 cosmo_filename = "tests/data/cosmo_desy1.yaml"
