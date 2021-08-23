@@ -1,4 +1,4 @@
-# import pdb
+import pdb
 from tjpcov import wigner_transform, bin_cov, parse
 import numpy as np
 import sacc
@@ -16,14 +16,14 @@ d2r = np.pi/180
 
 class CovarianceCalculator():
     def __init__(self, 
-        sacc = None,
+        sacc_file = None, # FIXME or cl_file or sacc_file or xi_file
         do_xi=False,
         xi_file=None,
         cl_file=None,
         cosmo=None,
         cov_type = 'gauss',
         mask_file =None,
-        fsky = 1.,
+        fsky = None,
         ngal_lens=None,
         ngal_src=None,
         sigma_e=None,
@@ -98,9 +98,53 @@ class CovarianceCalculator():
                   bias 
                   fsky/mask
         """
-        config, inp_dat = parse(tjpcov_cfg)
+        # parameters =  odict_keys(['sacc', 'do_xi', 'xi_file', 'cl_file', 'cosmo', 'cov_type', 'mask_file', 'fsky', 'ngal_lens', 
+        #     'ngal_src', 'sigma_e', 'bias_lens', 'IA'])
 
-        self.do_xi = config['tjpcov'].get('do_xi')
+        self.sacc_file=sacc_file
+        self.do_xi=do_xi
+        self.xi_file = xi_file
+        self.cl_file = cl_file
+        # self.cosmo = cosmo
+        self.cov_type=cov_type
+        self.mask_file = mask_file
+        self.fsky = fsky
+        # self.ngal_lens = ngal_lens
+        # self.ngal_src = ngal_src
+        # self.sigma_e = sigma_e
+        # self.bias_lens = bias_lens
+        self.IA = IA
+
+
+        cosmo_fn = cosmo
+
+        self.bias_lens = {f'lens{i}': v for i,v in enumerate(bias_lens) }
+        #= {k.replace('bias_',''):v for k,v in config['tjpcov'].items() 
+                         #   if 'bias_lens' in k}
+
+        # self.IA = config['tjpcov'].get('IA')
+        if ngal_lens is not None:
+            self.Ngal = {f'lens{i}': v*3600/d2r**2 for i,v in enumerate(ngal_lens)  }
+                        #{k.replace('Ngal_',''):v*3600/d2r**2 for k, v in config['tjpcov'].items() 
+                         #   if 'Ngal' in k}
+        if ngal_src is not None:                         
+            Ngal_src = {f'src{i}': v*3600/d2r**2 for i,v in enumerate(ngal_src)}
+            self.Ngal.update(Ngal_src)
+        #{k.replace('Ngal_',''):v*3600/d2r**2 for k, v in config['tjpcov'].items() 
+        #   
+        if sigma_e is not None:               #   if 'Ngal_src' in k}
+            self.sigma_e = {f'src{i}': v for i,v in enumerate(sigma_e)} 
+        # {k.replace('sigma_e','src'):v for k, v in config['tjpcov'].items() 
+        #                     if 'sigma_e' in k}
+        
+
+        # Treating fsky = 1 if no input is given
+        # self.fsky = config['tjpcov'].get('fsky')
+        
+
+        ## config, inp_dat = parse(tjpcov_cfg)
+
+        ## self.do_xi = config['tjpcov'].get('do_xi')
 
         if not isinstance(self.do_xi, bool):
             raise Exception("Err: check if you set do_xi: False (Harmonic Space) "
@@ -110,29 +154,29 @@ class CovarianceCalculator():
         print("Configuration space" if self.do_xi else "Harmonic Space")
 
         if self.do_xi:
-            xi_fn = config['tjpcov'].get('xi_file')
+            xi_fn = xi_file
         else:
-            cl_fn = config['tjpcov'].get('cl_file')
+            cl_fn = cl_file
 
-        cosmo_fn = config['tjpcov'].get('cosmo')
+        # cosmo_fn = cosmo_fn#config['tjpcov'].get('cosmo')
         # sacc_fn  = config['tjpcov'].get('sacc_file')
 
         # biases
         # reading values w/o passing the number of tomographic bins
         # import pdb; pdb.set_trace()
-        self.bias_lens = {k.replace('bias_',''):v for k,v in config['tjpcov'].items() 
-                            if 'bias_lens' in k}
-        self.IA = config['tjpcov'].get('IA')
-        self.Ngal = {k.replace('Ngal_',''):v*3600/d2r**2 for k, v in config['tjpcov'].items() 
-                            if 'Ngal' in k}
-        # self.Ngal_src = {k.replace('Ngal_',''):v*3600/d2r**2 for k, v in config['tjpcov'].items() 
-        #                     if 'Ngal_src' in k}
-        self.sigma_e = {k.replace('sigma_e','src'):v for k, v in config['tjpcov'].items() 
-                            if 'sigma_e' in k}
+        # self.bias_lens = {k.replace('bias_',''):v for k,v in config['tjpcov'].items() 
+        #                     if 'bias_lens' in k}
+        # self.IA = config['tjpcov'].get('IA')
+        # self.Ngal = {k.replace('Ngal_',''):v*3600/d2r**2 for k, v in config['tjpcov'].items() 
+        #                     if 'Ngal' in k}
+        # # self.Ngal_src = {k.replace('Ngal_',''):v*3600/d2r**2 for k, v in config['tjpcov'].items() 
+        # #                     if 'Ngal_src' in k}
+        # self.sigma_e = {k.replace('sigma_e','src'):v for k, v in config['tjpcov'].items() 
+        #                     if 'sigma_e' in k}
         
 
-        # Treating fsky = 1 if no input is given
-        self.fsky = config['tjpcov'].get('fsky')
+        # # Treating fsky = 1 if no input is given
+        # self.fsky = config['tjpcov'].get('fsky')
         if self.fsky is None:
             print("No input for fsky. Assuming ", end='')
             self.fsky=1
@@ -162,22 +206,22 @@ class CovarianceCalculator():
 
         # TO DO: remove this hotfix
         self.xi_data, self.cl_data = None, None
-
+        pdb.set_trace()
         if self.do_xi:
-            self.xi_data = sacc.Sacc.load_fits(
-                config['tjpcov'].get('sacc_file'))
+            self.xi_data = sacc.Sacc.load_fits(sacc_file)
+                # config['tjpcov'].get('sacc_file'))
 
         # TO DO: remove this dependence here
         #elif not do_xi: 
-        self.cl_data = sacc.Sacc.load_fits(
-            config['tjpcov'].get('cl_file'))
+        self.cl_data = sacc.Sacc.load_fits(cl_file)
+            # config['tjpcov'].get('cl_file'))
         # TO DO: remove this dependence here
         ell_list = self.get_ell_theta(self.cl_data,  # fix this
                                       'galaxy_density_cl',
                                       ('lens0', 'lens0'),
                                       'linear', do_xi=False)
 
-        self.mask_fn = config['tjpcov'].get('mask_file')  # windown handler TBD
+        self.mask_fn = mask_file #config['tjpcov'].get('mask_file')  # windown handler TBD
 
         # fao Set this inside get_ell_theta ?
         # ell, ell_bins, ell_edges = None, None, None
@@ -221,7 +265,7 @@ class CovarianceCalculator():
         
         #getter
 
-        cls.do_xi = config['tjpcov'].get('do_xi')
+        do_xi = config['tjpcov'].get('do_xi')
 
         #passar 
         cosmo_fn = config['tjpcov'].get('cosmo')
@@ -232,87 +276,139 @@ class CovarianceCalculator():
         # Original:
 
         # self.do_xi = config['tjpcov'].get('do_xi')
+        #FAO 
+        # parameters =  odict_keys(['sacc', 'do_xi', 'xi_file', 'cl_file', 'cosmo', 'cov_type', 'mask_file', 'fsky', 'ngal_lens', 
+        #     'ngal_src', 'sigma_e', 'bias_lens', 'IA'])
 
-        if not isinstance(cls.do_xi, bool):
-            raise Exception("Err: check if you set do_xi: False (Harmonic Space) "
-                            + "or do_xi: True in 'tjpcov' field of your yaml")
 
-        print("Starting TJPCov covariance calculator for", end=' ')
-        print("Configuration space" if cls.do_xi else "Harmonic Space")
+        # if not isinstance(do_xi, bool):
+        #     raise Exception("Err: check if you set do_xi: False (Harmonic Space) "
+        #                     + "or do_xi: True in 'tjpcov' field of your yaml")
 
-        if cls.do_xi:
-            xi_fn = config['tjpcov'].get('xi_file')
-        else:
-            cl_fn = config['tjpcov'].get('cl_file')
+        # print("Starting TJPCov covariance calculator for", end=' ')
+        # print("Configuration space" if do_xi else "Harmonic Space")
+        
+        # if do_xi:
+        #     xi_fn = config['tjpcov'].get('sacc_file')
+        # else:
+        #     cl_fn = config['tjpcov'].get('cl_file')
 
         #passar xi_fn, cl_fn 
         # sacc_fn  = config['tjpcov'].get('sacc_file')
+        fsky = config['tjpcov'].get('fsky')
 
         # biases
         # reading values w/o passing the number of tomographic bins
         # import pdb; pdb.set_trace()
-        cls.bias_lens = {k.replace('bias_',''):v for k,v in config['tjpcov'].items() 
-                            if 'bias_lens' in k}
-        cls.IA = config['tjpcov'].get('IA')
-        cls.Ngal = {k.replace('Ngal_',''):v*3600/d2r**2 for k, v in config['tjpcov'].items() 
-                            if 'Ngal' in k}
-        # self.Ngal_src = {k.replace('Ngal_',''):v*3600/d2r**2 for k, v in config['tjpcov'].items() 
-        #                     if 'Ngal_src' in k}
-        cls.sigma_e = {k.replace('sigma_e','src'):v for k, v in config['tjpcov'].items() 
-                            if 'sigma_e' in k}
+
+
+        # ------------------
+        # listas
+        # -------------------
+
+        bias_lens = [v for k,v in config['tjpcov'].items() 
+                            if 'bias_lens' in k]
+        IA_ = config['tjpcov'].get('IA')
+
+        keys = config['tjpcov'].keys()
+
+        has_ngal_lens, has_ngal_src, has_bias_lens, has_sigma_e = [False]*4
+        for k in keys:
+            if 'ngal_lens' in k.lower(): has_ngal_lens = True
+            if 'ngal_src' in k.lower(): has_ngal_src = True 
+            if 'bias_lens' in k.lower(): has_bias_lens = True 
+            if 'sigma_e' in k.lower(): has_sigma_e = True 
+
+        # if has_ngal_lens:
+        #     ngal_lens = [v for i,v in config['tjpcov'].items() if 'Ngal_lens' in i ]
+        # else:
+        #     ngal_lens = None
+        # if has_ngal_src:
+        #     ngal_src = [v for i,v in config['tjpcov'].items() if 'Ngal_src' in i ]
+        # if has_bias_lens:
+        #     bias_lens = [v for i,v in config['tjpcov'].items() if 'bias_lens' in i ]
+        # if has_sigma_e:
+        #     sigma_e = [v for i,v in config['tjpcov'].items() if 'sigma_e' in i ]
+        
+        # ngal_src =
+        # sigma_e = 
+        # cls.bias_lens = {k.replace('bias_',''):v for k,v in config['tjpcov'].items() 
+        #                     if 'bias_lens' in k}
+        # cls.IA = config['tjpcov'].get('IA')
+        # cls.Ngal = {k.replace('Ngal_',''):v*3600/d2r**2 for k, v in config['tjpcov'].items() 
+        #                     if 'Ngal' in k}
+        # # self.Ngal_src = {k.replace('Ngal_',''):v*3600/d2r**2 for k, v in config['tjpcov'].items() 
+        # #                     if 'Ngal_src' in k}
+        # cls.sigma_e = {k.replace('sigma_e','src'):v for k, v in config['tjpcov'].items() 
+        #                     if 'sigma_e' in k}
         
 
         # Treating fsky = 1 if no input is given
-        cls.fsky = config['tjpcov'].get('fsky')
-        if cls.fsky is None:
-            print("No input for fsky. Assuming ", end='')
-            cls.fsky=1
+        # fsky = config['tjpcov'].get('fsky')
+        # if cls.fsky is None:
+        #     print("No input for fsky. Assuming ", end='')
+        #     cls.fsky=1
 
-        print(f"fsky={cls.fsky}")
+        # print(f"fsky={cls.fsky}")
         
+        # treated in constructor!
 
-        if cosmo_fn is None or cosmo_fn == 'set':
-            cls.cosmo = cls.set_ccl_cosmo(config)
+        # if cosmo_fn is None or cosmo_fn == 'set':
+        #     cls.cosmo = cls.set_ccl_cosmo(config)
 
-        elif cosmo_fn.split('.')[-1] == 'yaml':
-            cls.cosmo = ccl.Cosmology.read_yaml(cosmo_fn)
-            # TODO: remove this hot fix of ccl
-            cls.cosmo.config.transfer_function_method = 1
+        # elif cosmo_fn.split('.')[-1] == 'yaml':
+        #     cls.cosmo = ccl.Cosmology.read_yaml(cosmo_fn)
+        #     # TODO: remove this hot fix of ccl
+        #     cls.cosmo.config.transfer_function_method = 1
 
-        elif cosmo_fn.split('.')[-1]  == 'pkl':
-            import pickle
-            with open(cosmo_fn, 'rb') as ccl_cosmo_file:
-                cls.cosmo = pickle.load(ccl_cosmo_file)
+        # elif cosmo_fn.split('.')[-1]  == 'pkl':
+        #     import pickle
+        #     with open(cosmo_fn, 'rb') as ccl_cosmo_file:
+        #         cls.cosmo = pickle.load(ccl_cosmo_file)
 
 
-        elif isinstance(cosmo_fn, ccl.core.Cosmology):  
-            cls.cosmo = cosmo_fn
-        else:
-            raise Exception(
-                "Err: File for cosmo field in input not recognized")
+        # elif isinstance(cosmo_fn, ccl.core.Cosmology):  
+        #     cls.cosmo = cosmo_fn
+        # else:
+        #     raise Exception(
+        #         "Err: File for cosmo field in input not recognized")
 
         # TO DO: remove this hotfix
-        cls.xi_data, cls.cl_data = None, None
+        # cls.xi_data, cls.cl_data = None, None
 
-        if cls.do_xi:
-            cls.xi_data = sacc.Sacc.load_fits(
-                config['tjpcov'].get('sacc_file'))
+        # if cls.do_xi:
+        #     cls.xi_data = sacc.Sacc.load_fits(
+        #         config['tjpcov'].get('sacc_file'))
 
         # TO DO: remove this dependence here
         #elif not do_xi: 
-        cls.cl_data = sacc.Sacc.load_fits(
-            config['tjpcov'].get('cl_file'))
-        # TO DO: remove this dependence here
-        ell_list = cls.get_ell_theta(cls.cl_data,  # fix this
-                                      'galaxy_density_cl',
-                                      ('lens0', 'lens0'),
-                                      'linear', do_xi=False)
+        # cls.cl_data = sacc.Sacc.load_fits(
+        #     config['tjpcov'].get('cl_file'))
+        # # TO DO: remove this dependence here
+        # ell_list = cls.get_ell_theta(cls.cl_data,  # fix this two_point_data, data_type, tracer_comb, ang_scale, do_xi=False):
+        #                               'galaxy_density_cl',
+        #                               ('lens0', 'lens0'),
+        #                               'linear', do_xi=False)
 
-        cls.mask_fn = config['tjpcov'].get('mask_file')  # windown handler TBD
+        mask_fn = config['tjpcov'].get('mask_file')  # windown handler TBD
 
-        init_params_names = signature.inspect(cls).parameters.keys()
 
-        inits = {k: params[k] for k in init_param_names if k in params}
+        init_params_names = inspect.signature(cls).parameters.keys()
+
+        inits = {k: params[k] for k in init_params_names if k in params}
+        if has_ngal_lens:
+            inits.update(dict(ngal_lens = [v for i,v in config['tjpcov'].items() if 'Ngal_lens' in i ]))
+        # else:
+        #     ngal_lens = None
+        if has_ngal_src:
+            inits.update(dict(ngal_src = [v for i,v in config['tjpcov'].items() if 'Ngal_src' in i ]))
+        if has_bias_lens:
+            inits.update(dict(bias_lens = [v for i,v in config['tjpcov'].items() if 'bias_lens' in i ]))
+        if has_sigma_e:
+            inits.update(dict(sigma_e = [v for i,v in config['tjpcov'].items() if 'sigma_e' in i ]))
+
+        pdb.set_trace()
+
 
         return cls(**inits) # TODO : Change constructor for a dictionary
         # return cls(tjpcov_cfg=tjpcov_cfg)
@@ -745,6 +841,7 @@ if __name__ == "__main__":
     import pickle
     import sys
     import os
+    
 
     cwd = os.getcwd()
     sys.path.append(os.path.dirname(cwd)+"/tjpcov")
@@ -752,7 +849,7 @@ if __name__ == "__main__":
     with open(f"./tests/data/tjpcov_cl.pkl", "rb") as ff:
         cov0cl = pickle.load(ff)
 
-
+    pdb.set_trace()
     tjp0 = cv.CovarianceCalculator.read_yaml(tjpcov_cfg=f"{cwd}/tests/data/conf_tjpcov_minimal.yaml")
     
     ccl_tracers, tracer_Noise = tjp0.get_tracer_info(tjp0.cl_data)
