@@ -16,19 +16,38 @@ d2r = np.pi/180
 
 class CovarianceCalculator():
     def __init__(self, 
-        sacc_file = None, # FIXME or cl_file or sacc_file or xi_file
         do_xi=False,
+        sacc_file = None, # FIXME or cl_file or sacc_file or xi_file
         xi_file=None,
         cl_file=None,
         cosmo=None,
         cov_type = 'gauss',
         mask_file =None,
-        fsky = None,
+        fsky = 1,
         ngal_lens=None,
         ngal_src=None,
         sigma_e=None,
         bias_lens=None,
         IA=None):
+        """
+        <description>    
+
+        Parameters
+        ----------
+        do_xi
+        xi_file
+        cl_file
+        cosmo
+        cov_type
+        mask_file
+        fsky
+        ngal_lens
+        ngal_src
+        sigma_e
+        bias_lens
+        IA
+        Results
+        -------
         # # Survey params:
         # # 5 lens bins
         # {% for i in range(5) %} 
@@ -52,12 +71,13 @@ class CovarianceCalculator():
 
         # IA: 0.5
 
-    #     ngal_lens
+        #     ngal_lens
 
-    # def __init__(self,
-    #              tjpcov_cfg=None):
-        """
-        Covariance Calculator object for TJPCov. 
+        # def __init__(self,
+        #              tjpcov_cfg=None):
+            """
+        """    
+            Covariance Calculator object for TJPCov. 
 
         .. note::
             - the cosmo_fn parameter is always necessary  
@@ -206,7 +226,7 @@ class CovarianceCalculator():
 
         # TO DO: remove this hotfix
         self.xi_data, self.cl_data = None, None
-        pdb.set_trace()
+        # pdb.set_trace()
         if self.do_xi:
             self.xi_data = sacc.Sacc.load_fits(sacc_file)
                 # config['tjpcov'].get('sacc_file'))
@@ -407,7 +427,7 @@ class CovarianceCalculator():
         if has_sigma_e:
             inits.update(dict(sigma_e = [v for i,v in config['tjpcov'].items() if 'sigma_e' in i ]))
 
-        pdb.set_trace()
+        # pdb.set_trace()
 
 
         return cls(**inits) # TODO : Change constructor for a dictionary
@@ -849,7 +869,7 @@ if __name__ == "__main__":
     with open(f"./tests/data/tjpcov_cl.pkl", "rb") as ff:
         cov0cl = pickle.load(ff)
 
-    pdb.set_trace()
+    # pdb.set_trace()
     tjp0 = cv.CovarianceCalculator.read_yaml(tjpcov_cfg=f"{cwd}/tests/data/conf_tjpcov_minimal.yaml")
     
     ccl_tracers, tracer_Noise = tjp0.get_tracer_info(tjp0.cl_data)
