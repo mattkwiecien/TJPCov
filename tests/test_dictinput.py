@@ -79,28 +79,31 @@ input_dictionary = { 'IA': 0.5,
                      'xi_file': 'examples/des_y1_3x2pt/generic_xi_des_y1_3x2pt_sacc_data.fits'}
 
 
+input_dictionary_cs = dict(input_dictionary)
+input_dictionary_cs.update({"do_xi":True})
 
 tjp1 = cv.CovarianceCalculator(**input_dictionary)
+tjp1_cs = cv.CovarianceCalculator(**input_dictionary_cs)
 
 tracer_comb1 = ('lens0', 'lens1')
 tracer_comb2 = ('src0', 'src1')
 
 ccl_tracers, tracer_Noise = tjp0.get_tracer_info(tjp0.cl_data)
 gcov_cl_1 = tjp0.cl_gaussian_cov(tracer_comb1=tracer_comb1,
-                                     tracer_comb2=tracer_comb2,
-                                     ccl_tracers=ccl_tracers,
-                                     tracer_Noise=tracer_Noise,
-                                     two_point_data=tjp0.cl_data,
-                                     do_xi=False)
+                                 tracer_comb2=tracer_comb2,
+                                 ccl_tracers=ccl_tracers,
+                                 tracer_Noise=tracer_Noise,
+                                 two_point_data=tjp0.cl_data,
+                                 do_xi=False)
 
 ccl_tracers, tracer_Noise = tjp1.get_tracer_info(tjp1.cl_data)
 
 gcov_cl_1_dict = tjp1.cl_gaussian_cov(tracer_comb1=tracer_comb1,
-                                     tracer_comb2=tracer_comb2,
-                                     ccl_tracers=ccl_tracers,
-                                     tracer_Noise=tracer_Noise,
-                                     two_point_data=tjp1.cl_data,
-                                     do_xi=False)
+                                      tracer_comb2=tracer_comb2,
+                                      ccl_tracers=ccl_tracers,
+                                      tracer_Noise=tracer_Noise,
+                                      two_point_data=tjp1.cl_data,
+                                      do_xi=False)
 
 def test_dictionary():
     np.testing.assert_allclose(gcov_cl_1['final_b'],
@@ -133,14 +136,7 @@ def depickling(name):
         print(f"missing {name}")
         print(os.listdir("tests/"))
 
-
-def check_numerr(a, b, f=np.array_equal):
-    """ wrapper for test
-    """
-    print('ok' if f(a, b) else 'Check for numerical errors')
-
-
-# INPUT
+#INPUT
 # CCL and sacc input:
 with open("tests/data/cosmos_desy1_v2p2p0.pkl", 'rb') as ff:
     cosmo = pickle.load(ff)
@@ -165,7 +161,8 @@ ref_md_th_bins = depickling('metadata_th_bins')  # th datavectors bins #EDGES
 ref_md_ell_bins = depickling('metadata_ell_bins')
 
 # SETUP
-tjp0 = cv.CovarianceCalculator.from_yaml(tjpcov_cfg="tests/data/conf_tjpcov_minimal.yaml")
+tjp0 = cv.CovarianceCalculator.from_yaml(tjpcov_cfg=
+                                         "tests/data/conf_tjpcov_minimal.yaml")
 
 ccl_tracers, tracer_Noise = tjp0.get_tracer_info(tjp0.cl_data)
 
@@ -188,11 +185,12 @@ def test_ell():
     """
     np.testing.assert_array_equal(tjp0.ell_edges,
                                   ref_md_ell_bins)
-
-
+    
+print(type(tjp0))
 
 def test_set_cosmo():
-        tjp0 = cv.CovarianceCalculator(**input_dictionary)
+    tjp0 = cv.CovarianceCalculator(**input_dictionary)
+    assert isinstance(tjp0, cv.CovarianceCalculator)
 
 # @pytest.mark.slow
 def test_xi_block():
@@ -202,12 +200,12 @@ def test_xi_block():
     print(f"Checking covariance block. \
           Tracer combination {tracer_comb1} {tracer_comb2}")
 
-    gcov_xi_1 = tjp0.cl_gaussian_cov(tracer_comb1=tracer_comb1,
-                                     tracer_comb2=tracer_comb2,
-                                     ccl_tracers=ccl_tracers,
-                                     tracer_Noise=tracer_Noise,
-                                     two_point_data=tjp0.cl_data,
-                                     do_xi=True)
+    gcov_xi_1 = tjp1_cs.cl_gaussian_cov(tracer_comb1=tracer_comb1,
+                                        tracer_comb2=tracer_comb2,
+                                        ccl_tracers=ccl_tracers,
+                                        tracer_Noise=tracer_Noise,
+                                        two_point_data=tjp0.cl_data,
+                                        do_xi=True)
     np.testing.assert_allclose(gcov_xi_1['final'], ref_covnobin)
     return
 
@@ -231,7 +229,7 @@ def test_cl_block():
                                ref_cov0cl[:24, :24])
 
 
-@pytest.mark.slow
+# @pytest.mark.slow
 def test_cl_cov():
     print("Comparing Cl covariance (840 data points)")
     gcov_cl = tjp0.get_all_cov()
@@ -242,26 +240,15 @@ def test_cl_cov():
 @pytest.mark.slow
 def test_xi_cov():
     print("Comparing xi covariance (700 data points)")
-    covall_xi = tjpcov.get_all_cov(do_xi=True)
-    np.testing.assert_allclose(gcov_cl,
+    covall_xi = tjp1_cs.get_all_cov(do_xi=True)
+    np.testing.assert_allclose(covall_xi,
                                ref_cov0xi[:, :])
 
 
-def ignore_covcl():
-    """Checking Gaussian covariances for lens0, lens0 
-    """
-
-    with open("tests/data/tjpcov_cl.pkl", "rb") as ff:
-        cov0cl = pickle.load(ff)
-    ccl_tracers = ccl_tracers
-    tracer_Noise = tracer_Noise
-    gcov_cl_0 = tjp.cl_gaussian_cov(tracer_comb1=('lens0', 'lens0'),
-                                    tracer_comb2=('lens0', 'lens0'),
-                                    ccl_tracers=ccl_tracers,
-                                    tracer_Noise=tracer_Noise,
-                                    two_point_data=tjp0.cl_data)
-
 
 if __name__ == '__main__':
+    import pdb 
+    pdb.set_trace()
+    test_xi_cov()
     pass
 
