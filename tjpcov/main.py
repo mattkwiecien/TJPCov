@@ -1,4 +1,3 @@
-import pdb
 from tjpcov import wigner_transform, bin_cov, parse
 import numpy as np
 import sacc
@@ -16,19 +15,19 @@ d2r = np.pi/180
 
 class CovarianceCalculator():
     def __init__(self, 
-        do_xi=False,
-        sacc_file = None, # FIXME or cl_file or sacc_file or xi_file
-        xi_file=None,
-        cl_file=None,
-        cosmo=None,
-        cov_type = 'gauss',
-        mask_file =None,
-        fsky = 1,
-        ngal_lens=None,
-        ngal_src=None,
-        sigma_e=None,
-        bias_lens=None,
-        IA=0.5):
+                 do_xi=False,
+                 sacc_file=None,  # FIXME or cl_file or sacc_file or xi_file
+                 xi_file=None,
+                 cl_file=None,
+                 cosmo=None,
+                 cov_type='gauss',
+                 mask_file=None,
+                 fsky=1,
+                 ngal_lens=None,
+                 ngal_src=None,
+                 sigma_e=None,
+                 bias_lens=None,
+                 IA=0.5):
         """
         Covariance Calculator object for TJPCov. 
 
@@ -80,12 +79,12 @@ class CovarianceCalculator():
         
     
         """
-        self.sacc_file=sacc_file
-        self.do_xi=do_xi
+        self.sacc_file = sacc_file
+        self.do_xi = do_xi
         self.xi_file = xi_file
         self.cl_file = cl_file
         # self.cosmo = cosmo
-        self.cov_type=cov_type
+        self.cov_type = cov_type
         self.mask_file = mask_file
         self.fsky = fsky
         # self.ngal_lens = ngal_lens
@@ -94,48 +93,45 @@ class CovarianceCalculator():
         # self.bias_lens = bias_lens
         self.IA = IA
 
-
         cosmo_fn = cosmo
 
-        self.bias_lens = {f'lens{i}': v for i,v in enumerate(bias_lens) }
-        #= {k.replace('bias_',''):v for k,v in config['tjpcov'].items() 
-                         #   if 'bias_lens' in k}
+        self.bias_lens = {f'lens{i}': v for i, v in enumerate(bias_lens)}
+        # = {k.replace('bias_',''):v for k,v in config['tjpcov'].items() 
+        #         if 'bias_lens' in k}
 
         # self.IA = config['tjpcov'].get('IA')
         if ngal_lens is not None:
-            self.Ngal = {f'lens{i}': v*3600/d2r**2 for i,v in enumerate(ngal_lens)  }
-                        #{k.replace('Ngal_',''):v*3600/d2r**2 for k, v in config['tjpcov'].items() 
-                         #   if 'Ngal' in k}
+            self.Ngal = {f'lens{i}': v*3600/d2r**2 for i, v in enumerate(ngal_lens)}
+        #                   {k.replace('Ngal_',''):v*3600/d2r**2 for k, v in 
+        #                      config['tjpcov'].items() if 'Ngal' in k}
         if ngal_src is not None:                         
-            Ngal_src = {f'src{i}': v*3600/d2r**2 for i,v in enumerate(ngal_src)}
+            Ngal_src = {f'src{i}': v*3600/d2r**2 for i, v in enumerate(ngal_src)}
             self.Ngal.update(Ngal_src)
-        #{k.replace('Ngal_',''):v*3600/d2r**2 for k, v in config['tjpcov'].items() 
+        # {k.replace('Ngal_',''):v*3600/d2r**2 for k, v in config['tjpcov'].items() 
         #   
-        if sigma_e is not None:               #   if 'Ngal_src' in k}
-            self.sigma_e = {f'src{i}': v for i,v in enumerate(sigma_e)} 
+        if sigma_e is not None:               # if 'Ngal_src' in k}
+            self.sigma_e = {f'src{i}': v for i, v in enumerate(sigma_e)} 
         # {k.replace('sigma_e','src'):v for k, v in config['tjpcov'].items() 
         #                     if 'sigma_e' in k}
         
-
         # Treating fsky = 1 if no input is given
         # self.fsky = config['tjpcov'].get('fsky')
         
+        # config, inp_dat = parse(tjpcov_cfg)
 
-        ## config, inp_dat = parse(tjpcov_cfg)
-
-        ## self.do_xi = config['tjpcov'].get('do_xi')
+        # self.do_xi = config['tjpcov'].get('do_xi')
 
         if not isinstance(self.do_xi, bool):
-            raise Exception("Err: check if you set do_xi: False (Harmonic Space) "
+            raise Exception("Err: check do_xi: False (Harmonic Space)"
                             + "or do_xi: True in 'tjpcov' field of your yaml")
 
         print("Starting TJPCov covariance calculator for", end=' ')
         print("Configuration space" if self.do_xi else "Harmonic Space")
 
-        if self.do_xi:
-            xi_fn = xi_file
-        else:
-            cl_fn = cl_file
+        # if self.do_xi:
+        #     xi_fn = xi_file
+        # else:
+        #     cl_fn = cl_file
 
         # cosmo_fn = cosmo_fn#config['tjpcov'].get('cosmo')
         # sacc_fn  = config['tjpcov'].get('sacc_file')
@@ -143,40 +139,38 @@ class CovarianceCalculator():
         # biases
         # reading values w/o passing the number of tomographic bins
         # import pdb; pdb.set_trace()
-        # self.bias_lens = {k.replace('bias_',''):v for k,v in config['tjpcov'].items() 
+        # self.bias_lens = {k.replace('bias_',''):v for k,v in 
+        #                   config['tjpcov'].items() 
         #                     if 'bias_lens' in k}
         # self.IA = config['tjpcov'].get('IA')
-        # self.Ngal = {k.replace('Ngal_',''):v*3600/d2r**2 for k, v in config['tjpcov'].items() 
+        # self.Ngal = {k.replace('Ngal_',''):v*3600/d2r**2 for k, v in 
+        #               config['tjpcov'].items() 
         #                     if 'Ngal' in k}
-        # # self.Ngal_src = {k.replace('Ngal_',''):v*3600/d2r**2 for k, v in config['tjpcov'].items() 
+        # self.Ngal_src = {k.replace('Ngal_',''):v*3600/d2r**2 for k, v in 
+        #                   config['tjpcov'].items() 
         # #                     if 'Ngal_src' in k}
-        # self.sigma_e = {k.replace('sigma_e','src'):v for k, v in config['tjpcov'].items() 
+        # self.sigma_e = {k.replace('sigma_e','src'):v for k, v in 
+        #                  config['tjpcov'].items() 
         #                     if 'sigma_e' in k}
         
-
         # # Treating fsky = 1 if no input is given
         # self.fsky = config['tjpcov'].get('fsky')
         if self.fsky is None:
             print("No input for fsky. Assuming ", end='')
-            self.fsky=1
+            self.fsky = 1
 
         print(f"fsky={self.fsky}")
         
-
-        if cosmo_fn is None or cosmo_fn == 'set':
-            self.cosmo = self.set_ccl_cosmo(config)
-
-        elif cosmo_fn.split('.')[-1] == 'yaml':
+        # if cosmo_fn is None or cosmo_fn == 'set':
+        #     self.cosmo = self.set_ccl_cosmo(config)
+        if cosmo_fn.split('.')[-1] == 'yaml':
             self.cosmo = ccl.Cosmology.read_yaml(cosmo_fn)
             # TODO: remove this hot fix of ccl
             self.cosmo.config.transfer_function_method = 1
-
-        elif cosmo_fn.split('.')[-1]  == 'pkl':
+        elif cosmo_fn.split('.')[-1] == 'pkl':
             import pickle
             with open(cosmo_fn, 'rb') as ccl_cosmo_file:
                 self.cosmo = pickle.load(ccl_cosmo_file)
-
-
         elif isinstance(cosmo_fn, ccl.core.Cosmology):  
             self.cosmo = cosmo_fn
         else:
@@ -188,31 +182,26 @@ class CovarianceCalculator():
         # pdb.set_trace()
         if self.do_xi:
             self.xi_data = sacc.Sacc.load_fits(sacc_file)
-                # config['tjpcov'].get('sacc_file'))
+        #       config['tjpcov'].get('sacc_file'))
 
         # TO DO: remove this dependence here
-        #elif not do_xi: 
+        # elif not do_xi: 
         self.cl_data = sacc.Sacc.load_fits(cl_file)
-            # config['tjpcov'].get('cl_file'))
+        #   config['tjpcov'].get('cl_file'))
         # TO DO: remove this dependence here
         ell_list = self.get_ell_theta(self.cl_data,  # fix this
                                       'galaxy_density_cl',
                                       ('lens0', 'lens0'),
                                       'linear', do_xi=False)
 
-        self.mask_fn = mask_file #config['tjpcov'].get('mask_file')  # windown handler TBD
+        self.mask_fn = mask_file  # config['tjpcov'].get('mask_file')# windown handler TBD
 
-        # fao Set this inside get_ell_theta ?
-        # ell, ell_bins, ell_edges = None, None, None
         theta, theta_bins, theta_edges = None, None, None
-
-
 
         # fix this for getting from the sacc file:
         th_list = self.set_ell_theta(2.5, 250., 20, do_xi=True)
 
         self.theta,  self.theta_bins, self.theta_edges,  = th_list
-
 
         # ell is the value for WT
         self.ell, self.ell_bins, self.ell_edges = ell_list
@@ -258,21 +247,18 @@ class CovarianceCalculator():
         config, inp_dat = parse(tjpcov_cfg)
         params = config['tjpcov']
 
-        do_xi = params.get('do_xi')
-
-        cosmo_fn = params.get('cosmo')
-
-        fsky = params.get('fsky')
+        # do_xi = params.get('do_xi')
+        # cosmo_fn = params.get('cosmo')
+        # fsky = params.get('fsky')
 
         # -----------------
         # lists
         # -----------------
-        bias_lens = [v for k,v in params.items() 
-                            if 'bias_lens' in k]
-        IA_ = params.get('IA')
+        # bias_lens = [v for k,v in params.items() 
+        #                     if 'bias_lens' in k]
+        # IA_ = params.get('IA')
 
         keys = params.keys()
-
         has_ngal_lens, has_ngal_src, has_bias_lens, has_sigma_e = [False]*4
         for k in keys:
             if 'ngal_lens' in k.lower(): has_ngal_lens = True
@@ -280,23 +266,23 @@ class CovarianceCalculator():
             if 'bias_lens' in k.lower(): has_bias_lens = True 
             if 'sigma_e' in k.lower(): has_sigma_e = True 
 
-        mask_fn = params.get('mask_file')  # windown handler
+        # mask_fn = params.get('mask_file')  # windown handler
 
         init_params_names = inspect.signature(cls).parameters.keys()
 
         inits = {k: params[k] for k in init_params_names if k in params}
         if has_ngal_lens:
-            inits.update(dict(ngal_lens = [v for i,v in params.items() 
-                                            if 'Ngal_lens' in i ]))
+            inits.update(dict(ngal_lens=[v for i, v in params.items() 
+                                         if 'Ngal_lens' in i]))
         if has_ngal_src:
-            inits.update(dict(ngal_src = [v for i,v in params.items() 
-                                            if 'Ngal_src' in i ]))
+            inits.update(dict(ngal_src=[v for i, v in params.items() 
+                                        if 'Ngal_src' in i]))
         if has_bias_lens:
-            inits.update(dict(bias_lens = [v for i,v in params.items() 
-                                            if 'bias_lens' in i ]))
+            inits.update(dict(bias_lens=[v for i, v in params.items() 
+                                         if 'bias_lens' in i]))
         if has_sigma_e:
-            inits.update(dict(sigma_e = [v for i,v in params.items() 
-                                        if 'sigma_e' in i ]))
+            inits.update(dict(sigma_e=[v for i, v in params.items() 
+                                       if 'sigma_e' in i]))
 
         return cls(**inits) 
 
@@ -320,7 +306,6 @@ class CovarianceCalculator():
             with open(output, 'w') as ff:
                 ff.write('....txt')
 
-
     def set_ccl_cosmo(self, config):
         """
         set the ccl cosmo from paramters in config file
@@ -334,7 +319,6 @@ class CovarianceCalculator():
                         for name in cosmo_param_names}
         cosmo = ccl.Cosmology(**cosmo_params)
         return cosmo
-
 
     def set_ell_theta(self, ang_min, ang_max, n_ang,
                       ang_scale='linear', do_xi=False):
@@ -374,7 +358,6 @@ class CovarianceCalculator():
             return ang, ang_bins, ang_edges  # TODO FIXIT
 
         return ang, ang_edges
-
 
     def get_ell_theta(self, two_point_data, data_type, tracer_comb, ang_scale,
                       do_xi=False):
@@ -419,7 +402,6 @@ class CovarianceCalculator():
                 "differences in produced ell/theta"
         return ang, ang_bins, ang_edges
 
-
     def wt_setup(self, ell, theta):
         """
         Set this up once before the covariance evaluations
@@ -457,7 +439,6 @@ class CovarianceCalculator():
         WT = wigner_transform(**WT_kwargs)
         return WT
 
-
     def get_cov_WT_spin(self, tracer_comb=None):
         """
         Parameters:
@@ -477,7 +458,6 @@ class CovarianceCalculator():
             if 'src' in i:
                 tracers += ['source']
         return self.WT_factors[tuple(tracers)]
-
 
     def get_tracer_info(self, two_point_data={}):
         """
@@ -504,19 +484,19 @@ class CovarianceCalculator():
             z = tracer_dat.z
 
             # FIXME: Following should be read from sacc dataset.--------------
-            #Ngal = 26.  # arc_min^2
-            #sigma_e = .26
-            #b = 1.5*np.ones(len(z))  # Galaxy bias (constant with scale and z)
+            # Ngal = 26.  # arc_min^2
+            # sigma_e = .26
+            # b = 1.5*np.ones(len(z))  # Galaxy bias (constant with scale and z)
             # AI = .5*np.ones(len(z))  # Galaxy bias (constant with scale and z)
-            #Ngal = Ngal*3600/d2r**2
+            # Ngal = Ngal*3600/d2r**2
             # ---------------------------------------------------------------
 
             dNdz = tracer_dat.nz
             dNdz /= (dNdz*np.gradient(z)).sum()
             dNdz *= self.Ngal[tracer]
-            #FAO  this should be called by tomographic bin
+            # FAO  this should be called by tomographic bin
             if 'source' in tracer or 'src' in tracer:
-                IA_bin = self.IA*np.ones(len(z)) # fao: refactor this
+                IA_bin = self.IA*np.ones(len(z))  # fao: refactor this
                 ccl_tracers[tracer] = ccl.WeakLensingTracer(
                     self.cosmo, dndz=(z, dNdz), ia_bias=(z, IA_bin))
                 # CCL automatically normalizes dNdz
@@ -533,7 +513,7 @@ class CovarianceCalculator():
     # Outter class     
     def cl_gaussian_cov(self, tracer_comb1=None, tracer_comb2=None,
                         ccl_tracers=None, tracer_Noise=None,
-                        two_point_data=None, do_xi=False,
+                        two_point_data=None,
                         xi_plus_minus1='plus', xi_plus_minus2='plus'):
         """
         Compute a single covariance matrix for a given pair of C_ell or xi
@@ -544,11 +524,13 @@ class CovarianceCalculator():
             final_b : binned covariance 
         """
         # fsky should be read from the sacc
-        # tracers 1,2,3,4=tracer_comb1[0],tracer_comb1[1],tracer_comb2[0],tracer_comb2[1]
+        # tracers 1,2,3,4= tracer_comb1[0],tracer_comb1[1],tracer_comb2[0],
+        #                  tracer_comb2[1]
         # ell=two_point_data.metadata['ell']
         # fao to discuss: indices
+        
         cosmo = self.cosmo
-        #do_xi=self.do_xi
+        do_xi = self.do_xi
 
         if not do_xi:
             ell = self.ell
@@ -577,9 +559,9 @@ class CovarianceCalculator():
                               ] if tracer_comb1[1] == tracer_comb2[0] else 0
 
         if do_xi:
-            norm = np.pi*4* self.fsky #two_point_data.metadata['fsky']
+            norm = np.pi*4 * self.fsky#  two_point_data.metadata['fsky']
         else:  # do c_ell
-            norm = (2*ell+1)*np.gradient(ell)* self.fsky #two_point_data.metadata['fsky']
+            norm = (2*ell+1)*np.gradient(ell)* self.fsky# two_point_data.metadata['fsky']
 
         coupling_mat = {}
         coupling_mat[1324] = np.eye(len(ell))  # placeholder
@@ -606,7 +588,8 @@ class CovarianceCalculator():
                 s1_s2_1 = s1_s2_1[xi_plus_minus1]
             if isinstance(s1_s2_2, dict):
                 s1_s2_2 = s1_s2_2[xi_plus_minus2]
-            th, cov['final'] = self.WT.projected_covariance2(l_cl=ell, s1_s2=s1_s2_1,
+            th, cov['final'] = self.WT.projected_covariance2(l_cl=ell, 
+                                                             s1_s2=s1_s2_1,
                                                              s1_s2_cross=s1_s2_2,
                                                              cl_cov=cov['final'])
 
@@ -627,7 +610,7 @@ class CovarianceCalculator():
     #     cov[1423]=None #if want to save memory
         return cov
 
-    def get_all_cov(self, do_xi=False):
+    def get_all_cov(self):
         """
         Compute all the covariances and then combine them into one single giant matrix
         Parameters:
@@ -644,7 +627,8 @@ class CovarianceCalculator():
         # FIXME: Only input needed should be two_point_data,
         # which is the sacc data file. Other parameters should be
         # included within sacc and read from there."""
-
+        
+        do_xi = self.do_xi
         two_point_data = self.xi_data if do_xi else self.cl_data
 
         ccl_tracers, tracer_Noise = self.get_tracer_info(
@@ -681,19 +665,19 @@ class CovarianceCalculator():
                 tracer_comb2 = tracer_combs[j]
                 Nell_bins_j = len(two_point_data.indices(tracers=tracer_comb2))
                 indx_j = j*Nell_bins_j
-                cov_ij = self.cl_gaussian_cov(tracer_comb1=tracer_comb1,
-                                              tracer_comb2=tracer_comb2,
-                                              ccl_tracers=ccl_tracers,
-                                              tracer_Noise=tracer_Noise,
-                                              do_xi=do_xi,
-                                              two_point_data=two_point_data)
+                cov_ij_bl = self.cl_gaussian_cov(tracer_comb1=tracer_comb1,
+                                                 tracer_comb2=tracer_comb2,
+                                                 ccl_tracers=ccl_tracers,
+                                                 tracer_Noise=tracer_Noise,
+                                                 # do_xi=do_xi,
+                                                 two_point_data=two_point_data)
 
                 # if do_xi or two_point_data.metadata['ell_bins'] is not None:
                 # check
                 if do_xi or self.ell_bins is not None:
-                    cov_ij = cov_ij['final_b']
+                    cov_ij = cov_ij_bl['final_b']
                 else:
-                    cov_ij = cov_ij['final']
+                    cov_ij = cov_ij_bl['final']
 
                 cov_full[indx_i:indx_i+Nell_bins_i,
                          indx_j:indx_j+Nell_bins_j] = cov_ij
@@ -701,9 +685,9 @@ class CovarianceCalculator():
                          indx_i:indx_i+Nell_bins_j] = cov_ij.T
         return cov_full
 
-    def create_sacc_cov(output, do_xi=False):
-        """ Write created cov to a new sacc object
-
+    def create_sacc_cov(self, output):
+        """
+        Write created covariance matrix to a new sacc object
         Parameters:
         ----------
         output (str): filename output
@@ -715,6 +699,7 @@ class CovarianceCalculator():
         None
 
         """
+        do_xi=self.do_xi
         print("Placeholder...")
         if do_xi:
             print(f"Saving xi covariance as \n{output}")
@@ -728,16 +713,14 @@ if __name__ == "__main__":
     import pickle
     import sys
     import os
-    
 
     cwd = os.getcwd()
     sys.path.append(os.path.dirname(cwd)+"/tjpcov")
-    # reference:
-    with open(f"./tests/data/tjpcov_cl.pkl", "rb") as ff:
+    # Add reference:
+    with open("./tests/data/tjpcov_cl.pkl", "rb") as ff:
         cov0cl = pickle.load(ff)
 
-    # pdb.set_trace()
-    tjp0 = cv.CovarianceCalculator.read_yaml(tjpcov_cfg=f"{cwd}/tests/data/conf_tjpcov_minimal.yaml")
+    tjp0 = cv.CovarianceCalculator.from_yaml(tjpcov_cfg=f"{cwd}/tests/data/conf_tjpcov_minimal.yaml")
     
     ccl_tracers, tracer_Noise = tjp0.get_tracer_info(tjp0.cl_data)
     trcs = tjp0.cl_data.get_tracer_combinations()
@@ -749,10 +732,8 @@ if __name__ == "__main__":
                                      two_point_data=tjp0.cl_data,
                                      )
 
-
-    if np.array_equal(gcov_cl_0['final_b'].diagonal()[:], cov0cl.diagonal()[:24]):
+    if np.array_equal(gcov_cl_0['final_b'].diagonal()[:],
+                      cov0cl.diagonal()[:24]):
         print("Cov (diagonal):\n", gcov_cl_0['final_b'].diagonal()[:])
     else:
         print(gcov_cl_0['final_b'].diagonal()[:], cov0cl.diagonal()[:24])
-    
-    
