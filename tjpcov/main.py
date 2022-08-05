@@ -1,4 +1,5 @@
 # import pdb
+from tjpcov.cluster_covariance import ClusterCovarianceArgs, ClusterNxN
 from . import wigner_transform, bin_cov, parse
 from . import nmt_tools
 import healpy as hp
@@ -214,6 +215,18 @@ class CovarianceCalculator():
             self.cov_tbc = [self.cov_tbc]
 
         return
+
+    def get_cluster_covariance_params():
+        # Issue xyz: Replace with SACC file or TXPipe inputs
+        c = ClusterCovarianceArgs()
+        c.z_min = 0.3
+        c.z_max = 1.2
+        c.z_bin_range = 0.05
+
+        c.min_richness = 10
+        c.max_richness = 100
+        c.richness_bin_range = 30
+        return c
 
     def split_tasks_by_rank(self, tasks):
         """
@@ -1069,6 +1082,11 @@ class CovarianceCalculator():
     #     cov[1423]=None #if want to save memory
         return cov
 
+    def cluster_counts_nxn(self):
+        args = self.get_cluster_covariance_params() #load in z/lambda bins
+        c = ClusterNxN(args, self.cosmo)
+        return c.calculate_covariance_all()
+
     def get_all_cov(self, do_xi=False, use_nmt=False, **kwargs):
         """
         Compute all the covariances and then combine them into one single giant matrix
@@ -1135,6 +1153,10 @@ class CovarianceCalculator():
                                                    tracer_Noise=tracer_Noise,
                                                    **kwargs)
                 else:
+                    # Pending refactor
+                    # if cluster == tracer_comb2 and tracer_comb1 == cluster:
+                    #   self.cluster_counts_nxn()
+                    # else:
                     cov_ij = self.cl_gaussian_cov(tracer_comb1=tracer_comb1,
                                                   tracer_comb2=tracer_comb2,
                                                   ccl_tracers=ccl_tracers,
