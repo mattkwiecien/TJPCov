@@ -57,9 +57,6 @@ class ClusterCovariance(ABC):
             self._sigma_vec = self.eval_sigma_vec(self.nz)
         return self._sigma_vec
 
-    
-
-
     def __init__(self, args: ClusterCovarianceArgs, cosmo, ovdelta=200, survey_area=4*np.pi):
 
         self.mass_func = hmf.MassFuncTinker10(cosmo)
@@ -88,7 +85,7 @@ class ClusterCovariance(ABC):
         self.survey_area = survey_area
         self.cosmo = cosmo
         self.ovdelta = ovdelta
-        self.h0 = ClusterCovarianceModel.h0
+        self.h0 = self.cosmo.h
 
         # FFT parameters:
         ko = self.ko
@@ -351,8 +348,6 @@ class ClusterCovariance(ABC):
         """
 
         cosmo = self.cosmo
-
-        
         ro = self.ro #1/kmax
         G = self.G #np.log(kmax/ko)
         L = self.L #2*np.pi*N/G
@@ -395,16 +390,14 @@ class ClusterCovariance(ABC):
         #CHECK THE INDEX NUMBERS
         # TODO test interpolkind
    
-
     @abstractmethod
-    def eval_sigma_vec(self):
+    def _eval_sigma_vec(self):
         # Defer the sigma_vec to subclasses (some use inverse others use regular.)
         pass  
     
-    @abstractmethod
     def _get_min_radial_idx(self):
-        pass
+        return np.argwhere(self.r_vec  < 0.95*self.radial_lower_limit)[-1][0]
     
-    @abstractmethod
     def _get_max_radial_idx(self):
-        pass
+        return np.argwhere(self.r_vec  > 1.05*self.radial_upper_limit)[0][0]
+

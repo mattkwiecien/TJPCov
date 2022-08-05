@@ -13,13 +13,13 @@ class ClusterNxN(ClusterCovariance):
         
         super().__init__(args, cosmo)   
 
-    def calculate_covariance_all(self, verbose=True, romberg_num = 2**6+1):
+    def calculate(self, verbose=True, romberg_num = 2**6+1):
 
         ini = time.time()
-
-        # TODO Improve workflow
-        self.eval_true_vec(romberg_num)
-        self.eval_M1_true_vec(romberg_num)
+        # Pre computes the -geometric- true vectors
+        self._eval_true_vec(romberg_num)
+        # Pre computes the true vectors M1 for Cov_N_N
+        self._eval_M1_true_vec(romberg_num)
 
         final_array = np.zeros((self.num_richness_bins, self.num_richness_bins, self.num_z_bins, self.num_z_bins))
 
@@ -44,7 +44,7 @@ class ClusterNxN(ClusterCovariance):
             end = time.time()
             if verbose:
                 print ( "%d \t%d \t%d \t%d \t%4.3e \t%3.2f "%\
-                        (z_i, z_j, richness_i, richness_j,float(final_array[e.li,e.lj,e.zi,e.zj]),(end-start)))
+                        (z_i, z_j, richness_i, richness_j, float(final_array[e.li,e.lj,e.zi,e.zj]), (end-start)))
 
         print ("\ntotal elapsed matrix for matrix was: " + str((end-ini)/3600) + "hours.")
 
@@ -57,11 +57,11 @@ class ClusterNxN(ClusterCovariance):
         else:
             shot = 0
 
-        cov = self._covariance_NxN(z_i,z_j,richness_i,richness_j, romberg_num)
+        cov = self._covariance_cluster_NxN(z_i, z_j, richness_i, richness_j, romberg_num)
         
         return shot + cov
 
-    def _covariance_NxN(self, bin_z_i, bin_z_j, bin_richness_i, bin_richness_j, romberg_num):
+    def _covariance_cluster_NxN(self, bin_z_i, bin_z_j, bin_richness_i, bin_richness_j, romberg_num):
         """ Cluster counts covariance
         Args:
             bin_z_i (float or ?array): tomographic bins in z_i or z_j
@@ -82,14 +82,7 @@ class ClusterNxN(ClusterCovariance):
         return (self.survey_area**2)*romb(romb_vec, dx=dz)
 
 
-    def _get_min_radial_idx(self):
-        return np.argwhere(self.r_vec  < 0.95*self.radial_lower_limit)[-1][0]
-    
-    def _get_max_radial_idx(self):
-        return np.argwhere(self.r_vec  > 1.05*self.radial_upper_limit)[0][0]
-
-
-    def eval_true_vec(self, romb_num):
+    def _eval_true_vec(self, romb_num):
         """ Pre computes the -geometric- true vectors  
         Z1, G1, dV for Cov_N_N. 
 
@@ -123,7 +116,7 @@ class ClusterNxN(ClusterCovariance):
                               for m in range(romb_num)]
 
 
-    def eval_M1_true_vec(self, romb_num):
+    def _eval_M1_true_vec(self, romb_num):
         """ Pre computes the true vectors  
         M1 for Cov_N_N. 
 
@@ -147,7 +140,7 @@ class ClusterNxN(ClusterCovariance):
                         self.integral_mass( self.Z1_true_vec[z, m], lbd)
         print(f'\r100.')
 
-    def eval_sigma_vec(self):
+    def _eval_sigma_vec(self):
         sigma_vec = np.zeros((self.nz,self.nz))
 
         for i in range (self.nz):
